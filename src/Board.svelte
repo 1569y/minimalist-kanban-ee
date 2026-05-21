@@ -1,5 +1,7 @@
 <script>
   import Lane from "./Lane.svelte";
+  import { CARD_COLOR_OPTIONS } from "./colors";
+  import { normalizeCardColorKey } from "./colors";
   import { getSortable } from "./sortable";
   const Sortable = getSortable();
   import { Menu, Notice, Platform } from "obsidian";
@@ -79,6 +81,10 @@
     return JSON.parse(JSON.stringify(board));
   }
 
+  function getRenderCardColor(color) {
+    return normalizeCardColorKey(color) ?? color;
+  }
+
   function showUndoToast(message, prior) {
     undoNotice?.hide();
     const notice = new Notice("", 7000);
@@ -151,14 +157,25 @@
     save();
   }
 
+  function handleLaneColor(e) {
+    const lane = board.lanes.find((l) => l.id === e.detail.laneId);
+    if (!lane) return;
+    lane.color = e.detail.color || undefined;
+    board = board;
+    save();
+  }
+
   function handleItemAdd(e) {
     const lane = board.lanes.find((l) => l.id === e.detail.laneId);
     if (lane) {
       const newItem = {
         id: generateId(),
         title: e.detail.title,
-        checked: false,
-        hasCheckbox: true,
+        body: e.detail.body,
+        checked: e.detail.checked ?? false,
+        hasCheckbox: e.detail.hasCheckbox ?? true,
+        color: e.detail.color,
+        subtasks: e.detail.subtasks,
       };
       if (settings.prependCards) {
         lane.items.unshift(newItem);
@@ -187,7 +204,9 @@
       const item = lane.items.find((i) => i.id === e.detail.itemId);
       if (item) {
         item.title = e.detail.title;
+        item.body = e.detail.body;
         if (e.detail.checked !== undefined) item.checked = e.detail.checked;
+        if (e.detail.subtasks !== undefined) item.subtasks = e.detail.subtasks;
         board = board;
         save();
       }
@@ -226,6 +245,29 @@
         .onClick(() => newNoteFromCard(lane, item))
     );
 
+    menu.addSeparator();
+    menu.addItem((i) =>
+      i
+        .setTitle("Default")
+        .setChecked(!item.color)
+        .onClick(() => {
+          item.color = undefined;
+          board = board;
+          save();
+        })
+    );
+    for (const option of CARD_COLOR_OPTIONS) {
+      menu.addItem((i) =>
+        i
+          .setTitle(option.label)
+          .setChecked(item.color === option.key)
+          .onClick(() => {
+            item.color = option.key;
+            board = board;
+            save();
+          })
+      );
+    }
     menu.addSeparator();
 
     menu.addItem((i) =>
@@ -454,7 +496,15 @@
   }
 </script>
 
-<div class="kb-board" bind:this={boardEl}>
+<div
+  class="kb-board"
+  data-list-title-size={settings.listTitleSize}
+  data-card-title-size={settings.cardTitleSize}
+  data-list-color-intensity={settings.listColorIntensity}
+  data-card-stripe-style="checkpoint-prefix"
+  data-move-hashtags={settings.moveHashtagsToFooter ? "on" : "off"}
+  bind:this={boardEl}
+>
   {#each board.lanes as lane, i (lane.id)}
     <Lane
       {lane}
@@ -468,6 +518,7 @@
       on:lanedelete={handleLaneDelete}
       on:lanerename={handleLaneRename}
       on:lanemove={handleLaneMove}
+      on:lanecolor={handleLaneColor}
       on:itemadd={handleItemAdd}
       on:itemdelete={handleItemDelete}
       on:itemedit={handleItemEdit}
@@ -483,11 +534,24 @@
       </div>
       <div class="kb-lane-items">
         {#each board.archive as item (item.id)}
-          <div class="kb-item kb-archive-item" data-id={item.id}>
-            <span class="kb-item-title">{item.title}</span>
+          <div
+            class="kb-item kb-archive-item"
+            class:kb-item-has-color={!!item.color}
+            class:kb-item-has-stripe={!!item.color && getRenderCardColor(item.color) !== "soft-color"}
+            data-id={item.id}
+            data-card-color={getRenderCardColor(item.color) || undefined}
+          >
+            {#if item.color && getRenderCardColor(item.color) !== "soft-color"}
+              <div class="kb-item-leading">
+                <div class="kb-card-stripe" aria-hidden="true"></div>
+              </div>
+            {/if}
+            <div class="kb-item-main">
+              <span class="kb-item-title">{item.title}</span>
+            </div>
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <button
-              class="kb-menu-btn"
+              class="kb-menu-btn kb-item-menu-btn"
               on:click={(e) => handleArchiveItemMenu({ detail: { itemId: item.id, event: e } })}
               on:mousedown|stopPropagation
               on:touchstart|stopPropagation
@@ -501,6 +565,9 @@
     </div>
   {/if}
   <div class="kb-add-lane">
-    <button class="kb-add-lane-btn" on:click={addLane}>+ Add List</button>
+    <button class="kb-add-lane-btn" on:click={addLane}>
+      <span class="kb-add-icon" aria-hidden="true">+</span>
+      <span class="kb-add-text">Add List</span>
+    </button>
   </div>
 </div>

@@ -1,9 +1,9 @@
 {
-  "id": "minimalist-kanban",
-  "name": "Minimalist Kanban",
-  "version": "0.6.0",
-  "minAppVersion": "1.0.0",
-  "description": "A lightweight Kanban board plugin.",
-  "author": "https://github.com/3rdLaw",
+  "id": "minimalist-kanban-ee-test",
+  "name": "Minimalist Kanban EE Test",
+  "version": "0.6.0-ee-test",
+  "minAppVersion": "1.7.2",
+  "description": "A lightweight Kanban board plugin with local EE test modifications.",
+  "author": "3rdLaw + local modifications",
   "isDesktopOnly": false
 }

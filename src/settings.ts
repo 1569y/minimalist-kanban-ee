@@ -6,6 +6,11 @@ export interface KBSettings {
   enterNewline: boolean;
   prependCards: boolean;
   showArchive: boolean;
+  listTitleSize: "small" | "normal" | "large";
+  cardTitleSize: "small" | "normal" | "large";
+  listColorIntensity: "subtle" | "normal" | "strong";
+  cardStripeStyle: "checkpoint-prefix";
+  moveHashtagsToFooter: boolean;
 }
 
 export const DEFAULT_SETTINGS: KBSettings = {
@@ -13,6 +18,11 @@ export const DEFAULT_SETTINGS: KBSettings = {
   enterNewline: false,
   prependCards: false,
   showArchive: false,
+  listTitleSize: "large",
+  cardTitleSize: "normal",
+  listColorIntensity: "normal",
+  cardStripeStyle: "checkpoint-prefix",
+  moveHashtagsToFooter: true,
 };
 
 export class KBSettingTab extends PluginSettingTab {
@@ -80,6 +90,63 @@ export class KBSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.showArchive)
           .onChange(async (value) => {
             this.plugin.settings.showArchive = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("List title size")
+      .setDesc("Choose a preset size for list titles.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("small", "Small")
+          .addOption("normal", "Normal")
+          .addOption("large", "Large")
+          .setValue(this.plugin.settings.listTitleSize)
+          .onChange(async (value: KBSettings["listTitleSize"]) => {
+            this.plugin.settings.listTitleSize = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Card title size")
+      .setDesc("Choose a preset size for card titles.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("small", "Small")
+          .addOption("normal", "Normal")
+          .addOption("large", "Large")
+          .setValue(this.plugin.settings.cardTitleSize)
+          .onChange(async (value: KBSettings["cardTitleSize"]) => {
+            this.plugin.settings.cardTitleSize = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("List color intensity")
+      .setDesc("Control how strongly list background colors are tinted.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("subtle", "Subtle")
+          .addOption("normal", "Normal")
+          .addOption("strong", "Strong")
+          .setValue(this.plugin.settings.listColorIntensity)
+          .onChange(async (value: KBSettings["listColorIntensity"]) => {
+            this.plugin.settings.listColorIntensity = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Move hashtags to card footer")
+      .setDesc("Show hashtags as footer chips instead of inline card text.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.moveHashtagsToFooter)
+          .onChange(async (value) => {
+            this.plugin.settings.moveHashtagsToFooter = value;
             await this.plugin.saveSettings();
           })
       );

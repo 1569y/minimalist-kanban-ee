@@ -8,6 +8,12 @@ export default class KanbanBoardPlugin extends Plugin {
   private bypassRedirect = false;
 
   async onload() {
+    console.info("[MK-EE] loaded build", {
+      pluginId: this.manifest?.id,
+      version: this.manifest?.version,
+      buildTag: "toolbar-selection-debug-20260522-001",
+    });
+
     await this.loadSettings();
     this.addSettingTab(new KBSettingTab(this.app, this));
 
@@ -50,7 +56,18 @@ export default class KanbanBoardPlugin extends Plugin {
 
   async loadSettings() {
     const saved = (await this.loadData()) as Partial<KBSettings> | undefined;
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
+    const merged = Object.assign({}, DEFAULT_SETTINGS, saved);
+    const legacyCardStripeStyle = (saved as { cardStripeStyle?: string } | undefined)
+      ?.cardStripeStyle;
+    if (
+      legacyCardStripeStyle === "content-bar" ||
+      legacyCardStripeStyle === "checkbox-bar" ||
+      legacyCardStripeStyle === "checkpoint-tail" ||
+      legacyCardStripeStyle === "checkpoint-prefix"
+    ) {
+      merged.cardStripeStyle = "checkpoint-prefix";
+    }
+    this.settings = merged;
   }
 
   async saveSettings() {

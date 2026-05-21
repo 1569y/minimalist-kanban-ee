@@ -125,6 +125,15 @@ export class Setting {
   constructor(_el: HTMLElement) {}
   setName(_n: string) { return this; }
   setDesc(_d: string) { return this; }
+  addDropdown(cb: any) {
+    const dropdown = {
+      addOption: (_value: string, _label: string) => dropdown,
+      setValue: (_v: string) => dropdown,
+      onChange: (_cb: (v: string) => void) => dropdown,
+    };
+    cb(dropdown);
+    return this;
+  }
   addToggle(cb: any) {
     const toggle = {
       setValue: (_v: boolean) => toggle,
@@ -151,12 +160,15 @@ export class MarkdownRenderer {
     sourcePath: string,
     component: any
   ) {
-    // Simple mock: convert [[wikilinks]] to <a> tags, wrap in <p>
-    const html = markdown.replace(
-      /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-      (_, href, display) =>
-        `<a data-href="${href}" href="${href}" class="internal-link">${display || href}</a>`
-    );
+    // Simple mock: convert wikilinks and basic emphasis, wrap in <p>
+    const html = markdown
+      .replace(
+        /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+        (_, href, display) =>
+          `<a data-href="${href}" href="${href}" class="internal-link">${display || href}</a>`
+      )
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*([^*]+)\*/g, "<em>$1</em>");
     const p = document.createElement("p");
     p.innerHTML = html;
     el.appendChild(p);

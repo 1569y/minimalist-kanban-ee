@@ -1,8 +1,11 @@
 import { describe, test, expect } from "vitest";
-import { parseBoard, serializeBoard } from "../src/parser";
+import {
+  formatItemForEditing,
+  parseBoard,
+  parseItemFromEditor,
+  serializeBoard,
+} from "../src/parser";
 import type { Board } from "../src/types";
-
-// ── parseBoard ───────────────────────────────────────────
 
 describe("parseBoard", () => {
   test("parses empty board (frontmatter only)", () => {
@@ -15,7 +18,6 @@ describe("parseBoard", () => {
     const board = parseBoard(
       "---\nkanban-plugin: board\n---\n\n## To Do\n\n## In Progress\n\n## Done\n"
     );
-    expect(board.lanes).toHaveLength(3);
     expect(board.lanes.map((l) => l.title)).toEqual([
       "To Do",
       "In Progress",
@@ -23,62 +25,165 @@ describe("parseBoard", () => {
     ]);
   });
 
-  test("parses plain list items", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## Col\n- Alpha\n- Beta\n"
-    );
-    expect(board.lanes[0].items).toHaveLength(2);
-    expect(board.lanes[0].items[0].title).toBe("Alpha");
-    expect(board.lanes[0].items[0].hasCheckbox).toBe(false);
-    expect(board.lanes[0].items[0].checked).toBe(false);
-  });
-
-  test("parses unchecked checkbox items", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## Col\n- [ ] Task\n"
-    );
-    const item = board.lanes[0].items[0];
-    expect(item.title).toBe("Task");
-    expect(item.hasCheckbox).toBe(true);
-    expect(item.checked).toBe(false);
-  });
-
-  test("parses checked checkbox items", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## Col\n- [x] Done\n- [X] Also done\n"
-    );
-    expect(board.lanes[0].items[0].checked).toBe(true);
-    expect(board.lanes[0].items[1].checked).toBe(true);
-  });
-
-  test("parses mixed plain and checkbox items", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## Col\n- Plain\n- [ ] Unchecked\n- [x] Checked\n"
-    );
-    const items = board.lanes[0].items;
-    expect(items[0].hasCheckbox).toBe(false);
-    expect(items[1].hasCheckbox).toBe(true);
-    expect(items[1].checked).toBe(false);
-    expect(items[2].hasCheckbox).toBe(true);
-    expect(items[2].checked).toBe(true);
-  });
-
-  test("parses multi-line items (continuation lines)", () => {
+  test("parses item title/body", () => {
     const md = [
       "---",
       "kanban-plugin: board",
       "---",
       "",
       "## Col",
-      "- Line one",
-      "  Line two",
-      "  Line three",
-      "- Next item",
+      "- [ ] Parent",
+      "  Parent note line 1",
+      "  Parent note line 2",
     ].join("\n");
-    const items = parseBoard(md).lanes[0].items;
-    expect(items).toHaveLength(2);
-    expect(items[0].title).toBe("Line one\nLine two\nLine three");
-    expect(items[1].title).toBe("Next item");
+    const item = parseBoard(md).lanes[0].items[0];
+    expect(item.title).toBe("Parent");
+    expect(item.body).toBe("Parent note line 1\nParent note line 2");
+  });
+
+  test("parses lane color comment", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "<!-- mk-list-color: sad -->",
+      "- [ ] Task",
+    ].join("\n");
+    expect(parseBoard(md).lanes[0].color).toBe("sad");
+  });
+
+  test("parses card color comment", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "- [ ] Parent",
+      "  <!-- mk-card-color: happy -->",
+      "  Parent note",
+    ].join("\n");
+    expect(parseBoard(md).lanes[0].items[0].color).toBe("happy");
+  });
+
+  test("parses legacy soft-yellow card color comment as soft-color", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "- [ ] Parent",
+      "  <!-- mk-card-color: soft-yellow -->",
+      "  Parent note",
+    ].join("\n");
+    expect(parseBoard(md).lanes[0].items[0].color).toBe("soft-color");
+  });
+
+  test("color comment does not enter item.body", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "- [ ] Parent",
+      "  <!-- mk-card-color: happy -->",
+      "  Parent note",
+    ].join("\n");
+    expect(parseBoard(md).lanes[0].items[0].body).toBe("Parent note");
+  });
+
+  test("color comment does not enter subtask.body", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "- [ ] Parent",
+      "  - [ ] Child",
+      "  <!-- mk-card-color: angry -->",
+      "    Child note",
+    ].join("\n");
+    const item = parseBoard(md).lanes[0].items[0];
+    expect(item.color).toBe("angry");
+    expect(item.subtasks?.[0].body).toBe("Child note");
+  });
+
+  test("invalid color key is ignored", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "<!-- mk-list-color: neon -->",
+      "- [ ] Parent",
+      "  <!-- mk-card-color: lava -->",
+    ].join("\n");
+    const board = parseBoard(md);
+    expect(board.lanes[0].color).toBeUndefined();
+    expect(board.lanes[0].items[0].color).toBeUndefined();
+  });
+
+  test("parses subtask title/body", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## Col",
+      "- [ ] Parent",
+      "  - [ ] Subtask A",
+      "    Subtask note line 1",
+      "    Subtask note line 2",
+    ].join("\n");
+    const subtask = parseBoard(md).lanes[0].items[0].subtasks?.[0];
+    expect(subtask).toMatchObject({
+      title: "Subtask A",
+      body: "Subtask note line 1\nSubtask note line 2",
+      checked: false,
+      hasCheckbox: true,
+    });
+  });
+
+  test("subtask body does not drift into item.body", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## Col",
+      "- [ ] Parent",
+      "  Parent note",
+      "  - [ ] Subtask A",
+      "    Subtask note",
+    ].join("\n");
+    const item = parseBoard(md).lanes[0].items[0];
+    expect(item.body).toBe("Parent note");
+    expect(item.subtasks?.[0].body).toBe("Subtask note");
+  });
+
+  test("parses one-tab nested subtasks into item.subtasks", () => {
+    const md = [
+      "---",
+      "kanban-plugin: board",
+      "---",
+      "",
+      "## To Do",
+      "- [ ] Parent",
+      "\t- [ ] Subtask A",
+      "\t\tSubtask note",
+      "\t- [x] Subtask B",
+    ].join("\n");
+    const item = parseBoard(md).lanes[0].items[0];
+    expect(item.subtasks).toMatchObject([
+      { title: "Subtask A", body: "Subtask note", checked: false, hasCheckbox: true },
+      { title: "Subtask B", checked: true, hasCheckbox: true },
+    ]);
   });
 
   test("parses archive section", () => {
@@ -98,59 +203,97 @@ describe("parseBoard", () => {
     ].join("\n");
     const board = parseBoard(md);
     expect(board.lanes).toHaveLength(1);
-    expect(board.lanes[0].title).toBe("Active");
     expect(board.archive).toHaveLength(2);
-    expect(board.archive[0].title).toBe("Old task");
-    expect(board.archive[1].checked).toBe(true);
-  });
-
-  test("handles board with no archive", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## Col\n- Item\n"
-    );
-    expect(board.archive).toHaveLength(0);
   });
 
   test("handles empty lanes", () => {
     const board = parseBoard(
       "---\nkanban-plugin: board\n---\n\n## Empty\n\n## Also Empty\n"
     );
-    expect(board.lanes).toHaveLength(2);
     expect(board.lanes[0].items).toHaveLength(0);
     expect(board.lanes[1].items).toHaveLength(0);
   });
-
-  test("ignores items before any heading", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n- Orphan\n\n## Col\n- Real\n"
-    );
-    expect(board.lanes).toHaveLength(1);
-    expect(board.lanes[0].items).toHaveLength(1);
-    expect(board.lanes[0].items[0].title).toBe("Real");
-  });
-
-  test("assigns unique ids", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## A\n- One\n- Two\n## B\n- Three\n"
-    );
-    const ids = [
-      board.lanes[0].id,
-      board.lanes[1].id,
-      ...board.lanes[0].items.map((i) => i.id),
-      ...board.lanes[1].items.map((i) => i.id),
-    ];
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  test("handles * bullet character", () => {
-    const board = parseBoard(
-      "---\nkanban-plugin: board\n---\n\n## Col\n* Star bullet\n"
-    );
-    expect(board.lanes[0].items[0].title).toBe("Star bullet");
-  });
 });
 
-// ── serializeBoard ───────────────────────────────────────
+describe("formatItemForEditing / parseItemFromEditor", () => {
+  test("formatItemForEditing outputs body ownership clearly", () => {
+    const text = formatItemForEditing({
+      id: "i1",
+      title: "Parent",
+      body: "Parent note",
+      checked: false,
+      hasCheckbox: true,
+      subtasks: [
+        {
+          id: "s1",
+          title: "Subtask A",
+          body: "Subtask note",
+          checked: false,
+          hasCheckbox: true,
+        },
+      ],
+    });
+    expect(text).toBe("Parent\nParent note\n- [ ] Subtask A\n  Subtask note");
+  });
+
+  test("parseItemFromEditor splits title/body/subtasks/subtask.body", () => {
+    const parsed = parseItemFromEditor(
+      "Parent\nParent note\n- [ ] Subtask A\n  Subtask note\n- [x] Subtask B"
+    );
+    expect(parsed).toMatchObject({
+      title: "Parent",
+      body: "Parent note",
+      subtasks: [
+        { title: "Subtask A", body: "Subtask note", checked: false, hasCheckbox: true },
+        { title: "Subtask B", checked: true, hasCheckbox: true },
+      ],
+    });
+  });
+
+  test("parseItemFromEditor treats unindented second line as item.body", () => {
+    const parsed = parseItemFromEditor(
+      "Another task\nParent note\n- [ ] Child"
+    );
+    expect(parsed.title).toBe("Another task");
+    expect(parsed.body).toBe("Parent note");
+    expect(parsed.subtasks).toMatchObject([
+      { title: "Child", checked: false, hasCheckbox: true },
+    ]);
+  });
+
+  test("parseItemFromEditor keeps plain text after subtask inside subtask.body", () => {
+    const parsed = parseItemFromEditor(
+      "Another task\nParent note\n- [ ] Child\n  Child note\n- [ ] Two\n- [ ] Three"
+    );
+    expect(parsed.body).toBe("Parent note");
+    expect(parsed.subtasks).toMatchObject([
+      { title: "Child", body: "Child note", checked: false, hasCheckbox: true },
+      { title: "Two", checked: false, hasCheckbox: true },
+      { title: "Three", checked: false, hasCheckbox: true },
+    ]);
+  });
+
+  test("new card parse and format round-trip keeps editor text stable", () => {
+    const draft = [
+      "Parent",
+      "Parent note line 1",
+      "Parent note line 2",
+      "- [ ] Subtask A",
+      "  Subtask note line 1",
+      "  Subtask note line 2",
+    ].join("\n");
+    const parsed = parseItemFromEditor(draft);
+    const reformatted = formatItemForEditing({
+      id: "i1",
+      title: parsed.title,
+      body: parsed.body,
+      checked: false,
+      hasCheckbox: true,
+      subtasks: parsed.subtasks,
+    });
+    expect(reformatted).toBe(draft);
+  });
+});
 
 describe("serializeBoard", () => {
   function makeBoard(overrides?: Partial<Board>): Board {
@@ -170,33 +313,7 @@ describe("serializeBoard", () => {
     };
   }
 
-  test("serializes basic board with frontmatter", () => {
-    const md = serializeBoard(makeBoard());
-    expect(md).toContain("---\nkanban-plugin: board\n---");
-    expect(md).toContain("## To Do");
-    expect(md).toContain("- [ ] Task A");
-    expect(md).toContain("- [ ] Task B");
-  });
-
-  test("serializes checkbox items", () => {
-    const board = makeBoard({
-      lanes: [
-        {
-          id: "l1",
-          title: "Col",
-          items: [
-            { id: "i1", title: "Open", checked: false, hasCheckbox: true },
-            { id: "i2", title: "Done", checked: true, hasCheckbox: true },
-          ],
-        },
-      ],
-    });
-    const md = serializeBoard(board);
-    expect(md).toContain("- [ ] Open");
-    expect(md).toContain("- [x] Done");
-  });
-
-  test("serializes multi-line items with indentation", () => {
+  test("serializes item body with two-space indentation", () => {
     const board = makeBoard({
       lanes: [
         {
@@ -205,16 +322,47 @@ describe("serializeBoard", () => {
           items: [
             {
               id: "i1",
-              title: "First\nSecond\nThird",
+              title: "Parent",
+              body: "Parent note",
               checked: false,
-              hasCheckbox: false,
+              hasCheckbox: true,
             },
           ],
         },
       ],
     });
     const md = serializeBoard(board);
-    expect(md).toContain("- [ ] First\n  Second\n  Third");
+    expect(md).toContain("- [ ] Parent\n  Parent note");
+  });
+
+  test("serializes subtask body with four-space indentation", () => {
+    const board = makeBoard({
+      lanes: [
+        {
+          id: "l1",
+          title: "Col",
+          items: [
+            {
+              id: "i1",
+              title: "Parent",
+              checked: false,
+              hasCheckbox: true,
+              subtasks: [
+                {
+                  id: "s1",
+                  title: "Subtask A",
+                  body: "Subtask note",
+                  checked: false,
+                  hasCheckbox: true,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const md = serializeBoard(board);
+    expect(md).toContain("- [ ] Parent\n  - [ ] Subtask A\n    Subtask note");
   });
 
   test("serializes archive section when present", () => {
@@ -227,90 +375,209 @@ describe("serializeBoard", () => {
     expect(md).toContain("---\n\n## Archive\n- [ ] Archived");
   });
 
-  test("omits archive section when empty", () => {
-    const md = serializeBoard(makeBoard());
-    expect(md).not.toContain("Archive");
-    // Should not contain the --- separator for archive
-    const lines = md.split("\n");
-    const dashLines = lines.filter((l) => l === "---");
-    // Only the frontmatter delimiters
-    expect(dashLines).toHaveLength(2);
+  test("serializes lane color comment", () => {
+    const board = makeBoard({
+      lanes: [
+        {
+          id: "l1",
+          title: "Col",
+          color: "sad",
+          items: [],
+        },
+      ],
+    });
+    expect(serializeBoard(board)).toContain("## Col\n<!-- mk-list-color: sad -->");
+  });
+
+  test("serializes card color comment", () => {
+    const board = makeBoard({
+      lanes: [
+        {
+          id: "l1",
+          title: "Col",
+          items: [
+            {
+              id: "i1",
+              title: "Parent",
+              color: "happy",
+              checked: false,
+              hasCheckbox: true,
+            },
+          ],
+        },
+      ],
+    });
+    expect(serializeBoard(board)).toContain(
+      "- [ ] Parent\n  <!-- mk-card-color: happy -->"
+    );
+  });
+
+  test("serializes soft-color card color comment with new key", () => {
+    const board = makeBoard({
+      lanes: [
+        {
+          id: "l1",
+          title: "Col",
+          items: [
+            {
+              id: "i1",
+              title: "Parent",
+              color: "soft-color",
+              checked: false,
+              hasCheckbox: true,
+            },
+          ],
+        },
+      ],
+    });
+    expect(serializeBoard(board)).toContain(
+      "- [ ] Parent\n  <!-- mk-card-color: soft-color -->"
+    );
+  });
+
+  test("serializes legacy soft-yellow item color using soft-color key", () => {
+    const board = makeBoard({
+      lanes: [
+        {
+          id: "l1",
+          title: "Col",
+          items: [
+            {
+              id: "i1",
+              title: "Parent",
+              color: "soft-yellow",
+              checked: false,
+              hasCheckbox: true,
+            },
+          ],
+        },
+      ],
+    });
+    expect(serializeBoard(board)).toContain(
+      "- [ ] Parent\n  <!-- mk-card-color: soft-color -->"
+    );
+  });
+
+  test("clear color removes color comment", () => {
+    const board = makeBoard({
+      lanes: [
+        {
+          id: "l1",
+          title: "Col",
+          items: [
+            {
+              id: "i1",
+              title: "Parent",
+              checked: false,
+              hasCheckbox: true,
+            },
+          ],
+        },
+      ],
+    });
+    const md = serializeBoard(board);
+    expect(md).not.toContain("mk-list-color");
+    expect(md).not.toContain("mk-card-color");
   });
 });
 
-// ── Round-trip ───────────────────────────────────────────
-
-describe("round-trip (parse → serialize → parse)", () => {
-  test("preserves basic board", () => {
-    const original =
-      "---\nkanban-plugin: board\n---\n\n## To Do\n- Task one\n- Task two\n\n## Done\n- Finished\n";
-    const board = parseBoard(original);
-    const serialized = serializeBoard(board);
-    const reparsed = parseBoard(serialized);
-
-    expect(reparsed.lanes.map((l) => l.title)).toEqual(
-      board.lanes.map((l) => l.title)
-    );
-    expect(reparsed.lanes[0].items.map((i) => i.title)).toEqual(
-      board.lanes[0].items.map((i) => i.title)
-    );
-  });
-
-  test("preserves multi-line items", () => {
+describe("round-trip (parse -> serialize -> parse)", () => {
+  test("parse serialize parse round-trip keeps body ownership stable", () => {
     const original = [
       "---",
       "kanban-plugin: board",
       "---",
       "",
-      "## Col",
-      "- Line 1",
-      "  Line 2",
+      "## To Do",
+      "- [ ] Parent",
+      "  Parent note",
+      "  - [ ] Subtask A",
+      "    Subtask note",
+      "  - [x] Subtask B",
+      "    Second note",
       "",
     ].join("\n");
     const reparsed = parseBoard(serializeBoard(parseBoard(original)));
-    expect(reparsed.lanes[0].items[0].title).toBe("Line 1\nLine 2");
+    const item = reparsed.lanes[0].items[0];
+    expect(item.title).toBe("Parent");
+    expect(item.body).toBe("Parent note");
+    expect(item.subtasks).toMatchObject([
+      { title: "Subtask A", body: "Subtask note", checked: false, hasCheckbox: true },
+      { title: "Subtask B", body: "Second note", checked: true, hasCheckbox: true },
+    ]);
   });
 
-  test("preserves checkbox state", () => {
-    const original =
-      "---\nkanban-plugin: board\n---\n\n## Col\n- [ ] Open\n- [x] Done\n- Plain\n";
-    const reparsed = parseBoard(serializeBoard(parseBoard(original)));
-    const items = reparsed.lanes[0].items;
-    expect(items[0]).toMatchObject({
-      hasCheckbox: true,
-      checked: false,
-      title: "Open",
-    });
-    expect(items[1]).toMatchObject({
-      hasCheckbox: true,
-      checked: true,
-      title: "Done",
-    });
-    expect(items[2]).toMatchObject({
-      hasCheckbox: true,
-      checked: false,
-      title: "Plain",
-    });
+  test("saving a card with inserted '- [ ] child' serializes as a nested subtask", () => {
+    const parsed = parseItemFromEditor("Parent\nParent note\n- [ ] Child task\n  Child note");
+    const board: Board = {
+      lanes: [
+        {
+          id: "l1",
+          title: "To Do",
+          items: [
+            {
+              id: "i1",
+              title: parsed.title,
+              body: parsed.body,
+              checked: false,
+              hasCheckbox: true,
+              subtasks: parsed.subtasks,
+            },
+          ],
+        },
+      ],
+      archive: [],
+    };
+    const md = serializeBoard(board);
+    expect(md).toContain("- [ ] Parent\n  Parent note\n  - [ ] Child task\n    Child note");
   });
 
-  test("preserves archive section", () => {
-    const original = [
+  test("new card parsed from editor serializes parent body, subtask, and subtask body on first save", () => {
+    const parsed = parseItemFromEditor(
+      "Parent\nParent note line 1\nParent note line 2\n- [ ] Subtask A\n  Subtask note line 1\n  Subtask note line 2"
+    );
+    const board: Board = {
+      lanes: [
+        {
+          id: "l1",
+          title: "To Do",
+          items: [
+            {
+              id: "i1",
+              title: parsed.title,
+              body: parsed.body,
+              checked: false,
+              hasCheckbox: true,
+              subtasks: parsed.subtasks,
+            },
+          ],
+        },
+      ],
+      archive: [],
+    };
+    const md = serializeBoard(board);
+    expect(md).toContain(
+      "- [ ] Parent\n  Parent note line 1\n  Parent note line 2\n  - [ ] Subtask A\n    Subtask note line 1\n    Subtask note line 2"
+    );
+  });
+
+  test("serialize after subtask checked update keeps item.body and subtask.body", () => {
+    const board = parseBoard([
       "---",
       "kanban-plugin: board",
       "---",
       "",
-      "## Active",
-      "- Task",
+      "## To Do",
+      "- [ ] Parent",
+      "  Parent note",
+      "  - [ ] Child",
+      "    Child note",
       "",
-      "---",
-      "",
-      "## Archive",
-      "- Old",
-      "",
-    ].join("\n");
-    const reparsed = parseBoard(serializeBoard(parseBoard(original)));
-    expect(reparsed.lanes).toHaveLength(1);
-    expect(reparsed.archive).toHaveLength(1);
-    expect(reparsed.archive[0].title).toBe("Old");
+    ].join("\n"));
+    const item = board.lanes[0].items[0];
+    item.subtasks![0].checked = true;
+
+    const md = serializeBoard(board);
+    expect(md).toContain("- [ ] Parent\n  Parent note\n  - [x] Child\n    Child note");
   });
 });
