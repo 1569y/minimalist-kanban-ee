@@ -59,22 +59,6 @@
     syncSelection();
   }
 
-  function logSelectionEvent(eventName) {
-    if (!editInput) return;
-    console.debug("[MK-EE textarea-selection]", {
-      eventType: eventName,
-      selectionStart: editInput.selectionStart,
-      selectionEnd: editInput.selectionEnd,
-      activeElementMatches: document.activeElement === editInput,
-      valueLength: editValue.length,
-    });
-  }
-
-  function rememberSelectionEvent(event) {
-    rememberSelection();
-    logSelectionEvent(event?.type ?? "unknown");
-  }
-
   function handleTitleClick(event) {
     if (event.ctrlKey || event.metaKey) {
       const wikiMatch = item.title.match(/\[\[([^\]|]+)/);
@@ -179,37 +163,6 @@
   }
 
   async function applyFormat(format) {
-    const active = document.activeElement === editInput;
-    const start = editInput?.selectionStart ?? null;
-    const end = editInput?.selectionEnd ?? null;
-    const usedFallback =
-      !active && isValidSelectionRange(lastSelection, editValue.length);
-    const fallbackStart = usedFallback ? lastSelection.start : null;
-    const fallbackEnd = usedFallback ? lastSelection.end : null;
-    const previewStart = usedFallback ? fallbackStart : start;
-    const previewEnd = usedFallback ? fallbackEnd : end;
-    const selectedPreview =
-      typeof previewStart === "number" &&
-      typeof previewEnd === "number" &&
-      previewStart >= 0 &&
-      previewEnd >= previewStart
-        ? editValue.slice(previewStart, previewEnd)
-        : "";
-
-    console.debug("[MK-EE toolbar-selection]", {
-      action: format,
-      textareaExists: !!editInput,
-      activeElementMatches: active,
-      selectionStart: start,
-      selectionEnd: end,
-      lastSelection,
-      valueLength: editValue.length,
-      selectedTextPreview: selectedPreview,
-      eventType: "toolbar-click",
-      eventTargetClassName: "kb-format-btn",
-      usedFallbackSelection: usedFallback,
-    });
-
     const result = await applyMarkdownFormat(
       editInput,
       editValue,
@@ -219,26 +172,6 @@
       format,
       lastSelection
     );
-
-    console.debug("[MK-EE toolbar-selection]", {
-      action: format,
-      textareaExists: !!editInput,
-      activeElementMatches: document.activeElement === editInput,
-      selectionStart: editInput?.selectionStart ?? null,
-      selectionEnd: editInput?.selectionEnd ?? null,
-      lastSelection,
-      valueLength: editValue.length,
-      selectedTextPreview: result?.selectedText ?? selectedPreview,
-      eventType: "toolbar-click-result",
-      eventTargetClassName: "kb-format-btn",
-      usedFallbackSelection: result?.usedFallback ?? usedFallback,
-      finalInsertStart: result?.start ?? null,
-      finalInsertEnd: result?.end ?? null,
-      finalSelectionStart: result?.finalStart ?? null,
-      finalSelectionEnd: result?.finalEnd ?? null,
-      applied: result?.applied ?? false,
-      reason: result?.reason ?? null,
-    });
 
     if (!result?.applied) return;
     autoResize(editInput);
@@ -378,16 +311,15 @@
           bind:value={editValue}
           on:blur={handleEditBlur}
           on:keydown={handleKeydown}
-          on:focus={rememberSelectionEvent}
+          on:focus={rememberSelection}
           on:input={() => {
             autoResize(editInput);
             rememberSelection();
-            logSelectionEvent("input");
           }}
-          on:click={rememberSelectionEvent}
-          on:mouseup={rememberSelectionEvent}
-          on:keyup={rememberSelectionEvent}
-          on:select={rememberSelectionEvent}
+          on:click={rememberSelection}
+          on:mouseup={rememberSelection}
+          on:keyup={rememberSelection}
+          on:select={rememberSelection}
           class="kb-item-edit kb-item-edit-textarea"
           rows="1"
         ></textarea>

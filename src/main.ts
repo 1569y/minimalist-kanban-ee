@@ -8,12 +8,6 @@ export default class KanbanBoardPlugin extends Plugin {
   private bypassRedirect = false;
 
   async onload() {
-    console.info("[MK-EE] loaded build", {
-      pluginId: this.manifest?.id,
-      version: this.manifest?.version,
-      buildTag: "toolbar-selection-debug-20260522-001",
-    });
-
     await this.loadSettings();
     this.addSettingTab(new KBSettingTab(this.app, this));
 

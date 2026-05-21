@@ -9,9 +9,9 @@ export interface LinkSuggestion {
  * Attaches [[wikilink]] autocomplete to a plain <textarea>.
  *
  * Supports:
- *   [[query       → file search
- *   [[file#query  → heading search within file
- *   [[file|       → suggest closes (user types display text)
+ *   [[query       file search
+ *   [[file#query  heading search within file
+ *   [[file|       suggest closes (user types display text)
  */
 export class LinkSuggest {
   private app: App;
@@ -83,8 +83,6 @@ export class LinkSuggest {
     return false;
   }
 
-  // ── Internals ──────────────────────────────────────────
-
   private getContext(): {
     start: number;
     fileQuery: string;
@@ -138,7 +136,7 @@ export class LinkSuggest {
 
       let score: number;
       if (!lower) {
-        score = 0; // empty query — rank by recency
+        score = 0; // Empty query ranks by recency.
       } else if (basename === lower) {
         score = 4;
       } else if (basename.startsWith(lower)) {

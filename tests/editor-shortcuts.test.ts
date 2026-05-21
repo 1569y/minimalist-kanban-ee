@@ -43,7 +43,6 @@ describe("editor-shortcuts", () => {
     const textarea = makeTextarea("Parent\n- [ ] Subtask");
     const outside = document.createElement("button");
     document.body.appendChild(outside);
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     outside.focus();
 
@@ -62,11 +61,6 @@ describe("editor-shortcuts", () => {
     expect(result?.applied).toBe(false);
     expect(result?.reason).toBe("invalid-selection");
     expect(nextValue).toBe("Parent\n- [ ] Subtask");
-    expect(warnSpy).toHaveBeenCalledWith(
-      "[MK-EE toolbar-selection] no valid selection; abort format"
-    );
-
-    warnSpy.mockRestore();
   });
 
   test("validates selection bounds", () => {

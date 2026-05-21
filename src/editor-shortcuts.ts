@@ -68,8 +68,6 @@ export function resolveSelectionRange(
         selectedText: value.slice(start, end),
       };
     }
-
-    console.warn("[MK-EE toolbar-selection] no valid selection; abort format");
     return null;
   }
 
@@ -82,8 +80,6 @@ export function resolveSelectionRange(
       selectedText: value.slice(fallbackSelection.start, fallbackSelection.end),
     };
   }
-
-  console.warn("[MK-EE toolbar-selection] no valid selection; abort format");
   return null;
 }
 

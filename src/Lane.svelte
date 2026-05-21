@@ -210,22 +210,6 @@
     };
   }
 
-  function logSelectionEvent(eventName) {
-    if (!addCardInput) return;
-    console.debug("[MK-EE textarea-selection]", {
-      eventType: eventName,
-      selectionStart: addCardInput.selectionStart,
-      selectionEnd: addCardInput.selectionEnd,
-      activeElementMatches: document.activeElement === addCardInput,
-      valueLength: newItemTitle.length,
-    });
-  }
-
-  function rememberSelectionEvent(event) {
-    rememberSelection();
-    logSelectionEvent(event?.type ?? "unknown");
-  }
-
   function handleAddKeydown(e) {
     if (e.isComposing) return;
     const isEnter =
@@ -304,60 +288,9 @@
   }
 
   async function applyFormat(format) {
-    const active = document.activeElement === addCardInput;
-    const start = addCardInput?.selectionStart ?? null;
-    const end = addCardInput?.selectionEnd ?? null;
-    const usedFallback =
-      !active && isValidSelectionRange(lastSelection, newItemTitle.length);
-    const fallbackStart = usedFallback ? lastSelection.start : null;
-    const fallbackEnd = usedFallback ? lastSelection.end : null;
-    const previewStart = usedFallback ? fallbackStart : start;
-    const previewEnd = usedFallback ? fallbackEnd : end;
-    const selectedPreview =
-      typeof previewStart === "number" &&
-      typeof previewEnd === "number" &&
-      previewStart >= 0 &&
-      previewEnd >= previewStart
-        ? newItemTitle.slice(previewStart, previewEnd)
-        : "";
-
-    console.debug("[MK-EE toolbar-selection]", {
-      action: format,
-      textareaExists: !!addCardInput,
-      activeElementMatches: active,
-      selectionStart: start,
-      selectionEnd: end,
-      lastSelection,
-      valueLength: newItemTitle.length,
-      selectedTextPreview: selectedPreview,
-      eventType: "toolbar-click",
-      eventTargetClassName: "kb-format-btn",
-      usedFallbackSelection: usedFallback,
-    });
-
     const result = await applyMarkdownFormat(addCardInput, newItemTitle, (next) => {
       newItemTitle = next;
     }, format, lastSelection);
-
-    console.debug("[MK-EE toolbar-selection]", {
-      action: format,
-      textareaExists: !!addCardInput,
-      activeElementMatches: document.activeElement === addCardInput,
-      selectionStart: addCardInput?.selectionStart ?? null,
-      selectionEnd: addCardInput?.selectionEnd ?? null,
-      lastSelection,
-      valueLength: newItemTitle.length,
-      selectedTextPreview: result?.selectedText ?? selectedPreview,
-      eventType: "toolbar-click-result",
-      eventTargetClassName: "kb-format-btn",
-      usedFallbackSelection: result?.usedFallback ?? usedFallback,
-      finalInsertStart: result?.start ?? null,
-      finalInsertEnd: result?.end ?? null,
-      finalSelectionStart: result?.finalStart ?? null,
-      finalSelectionEnd: result?.finalEnd ?? null,
-      applied: result?.applied ?? false,
-      reason: result?.reason ?? null,
-    });
 
     if (!result?.applied) return;
     rememberSelection();
@@ -424,13 +357,13 @@
           bind:this={addCardInput}
           bind:value={newItemTitle}
           on:blur={handleAddBlur}
-          on:focus={rememberSelectionEvent}
-          on:input={rememberSelectionEvent}
-          on:click={rememberSelectionEvent}
-          on:mouseup={rememberSelectionEvent}
+          on:focus={rememberSelection}
+          on:input={rememberSelection}
+          on:click={rememberSelection}
+          on:mouseup={rememberSelection}
           on:keydown={handleAddKeydown}
-          on:keyup={rememberSelectionEvent}
-          on:select={rememberSelectionEvent}
+          on:keyup={rememberSelection}
+          on:select={rememberSelection}
           placeholder="Add a card"
           class="kb-add-item-input kb-add-card-textarea"
           rows="1"
