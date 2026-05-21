@@ -10,13 +10,11 @@ import { readFileSync } from "node:fs";
 
 const defaultSettings = {
   showCheckboxes: false,
-  enterNewline: false,
   prependCards: false,
   showArchive: false,
   listTitleSize: "large" as const,
   cardTitleSize: "normal" as const,
   listColorIntensity: "normal" as const,
-  cardStripeStyle: "checkpoint-prefix" as const,
   moveHashtagsToFooter: true,
 };
 
@@ -138,7 +136,6 @@ describe("Board rendering", () => {
     expect(board?.getAttribute("data-list-title-size")).toBe("large");
     expect(board?.getAttribute("data-card-title-size")).toBe("normal");
     expect(board?.getAttribute("data-list-color-intensity")).toBe("normal");
-    expect(board?.getAttribute("data-card-stripe-style")).toBe("checkpoint-prefix");
     expect(board?.getAttribute("data-move-hashtags")).toBe("on");
   });
 
@@ -165,39 +162,6 @@ describe("Board rendering", () => {
 
   test("moveHashtagsToFooter default is true", () => {
     expect(defaultSettings.moveHashtagsToFooter).toBe(true);
-  });
-
-  test("cardStripeStyle default is checkpoint-prefix", () => {
-    expect(defaultSettings.cardStripeStyle).toBe("checkpoint-prefix");
-  });
-
-  test("board keeps checkpoint-prefix data attribute", () => {
-    const { container } = renderBoard(undefined, { cardStripeStyle: "checkpoint-prefix" });
-    expect(container.querySelector(".kb-board")?.getAttribute("data-card-stripe-style")).toBe(
-      "checkpoint-prefix"
-    );
-  });
-
-  test("legacy checkpoint-tail setting falls back to checkpoint-prefix", async () => {
-    const plugin = new KanbanBoardPlugin();
-    plugin.loadData = vi.fn().mockResolvedValue({ cardStripeStyle: "checkpoint-tail" });
-
-    await plugin.loadSettings();
-
-    expect(plugin.settings.cardStripeStyle).toBe("checkpoint-prefix");
-  });
-
-  test("legacy content-bar and checkbox-bar settings both normalize to checkpoint-prefix", async () => {
-    const pluginA = new KanbanBoardPlugin();
-    pluginA.loadData = vi.fn().mockResolvedValue({ cardStripeStyle: "content-bar" });
-    await pluginA.loadSettings();
-
-    const pluginB = new KanbanBoardPlugin();
-    pluginB.loadData = vi.fn().mockResolvedValue({ cardStripeStyle: "checkbox-bar" });
-    await pluginB.loadSettings();
-
-    expect(pluginA.settings.cardStripeStyle).toBe("checkpoint-prefix");
-    expect(pluginB.settings.cardStripeStyle).toBe("checkpoint-prefix");
   });
 
   test("card receives data-card-color attribute", () => {

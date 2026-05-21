@@ -262,10 +262,6 @@
   z-index: 0;
 }
 
-.kb-board[data-card-stripe-style="checkpoint-prefix"] .kb-card-stripe {
-  background-color: rgba(var(--mk-color-rgb), 0.76);
-}
-
 .kb-lane[data-lane-color="happy"] {
   --mk-lane-color-rgb: 199, 176, 122;
 }

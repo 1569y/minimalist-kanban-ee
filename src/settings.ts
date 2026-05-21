@@ -3,25 +3,21 @@ import type KanbanBoardPlugin from "./main";
 
 export interface KBSettings {
   showCheckboxes: boolean;
-  enterNewline: boolean;
   prependCards: boolean;
   showArchive: boolean;
   listTitleSize: "small" | "normal" | "large";
   cardTitleSize: "small" | "normal" | "large";
   listColorIntensity: "subtle" | "normal" | "strong";
-  cardStripeStyle: "checkpoint-prefix";
   moveHashtagsToFooter: boolean;
 }
 
 export const DEFAULT_SETTINGS: KBSettings = {
   showCheckboxes: false,
-  enterNewline: false,
   prependCards: false,
   showArchive: false,
   listTitleSize: "large",
   cardTitleSize: "normal",
   listColorIntensity: "normal",
-  cardStripeStyle: "checkpoint-prefix",
   moveHashtagsToFooter: true,
 };
 
@@ -47,21 +43,6 @@ export class KBSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.showCheckboxes)
           .onChange(async (value) => {
             this.plugin.settings.showCheckboxes = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Enter key adds new line")
-      .setDesc(
-        "When enabled, Enter adds a new line in card text and Shift+Enter submits. " +
-          "When disabled, Enter submits and Shift+Enter adds a new line."
-      )
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enterNewline)
-          .onChange(async (value) => {
-            this.plugin.settings.enterNewline = value;
             await this.plugin.saveSettings();
           })
       );

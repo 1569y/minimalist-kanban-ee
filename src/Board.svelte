@@ -501,7 +501,6 @@
   data-list-title-size={settings.listTitleSize}
   data-card-title-size={settings.cardTitleSize}
   data-list-color-intensity={settings.listColorIntensity}
-  data-card-stripe-style="checkpoint-prefix"
   data-move-hashtags={settings.moveHashtagsToFooter ? "on" : "off"}
   bind:this={boardEl}
 >

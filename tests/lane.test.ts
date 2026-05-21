@@ -6,13 +6,11 @@ import SortableMock from "./mocks/sortablejs";
 
 const defaultSettings = {
   showCheckboxes: false,
-  enterNewline: false,
   prependCards: false,
   showArchive: false,
   listTitleSize: "large" as const,
   cardTitleSize: "normal" as const,
   listColorIntensity: "normal" as const,
-  cardStripeStyle: "checkpoint-prefix" as const,
   moveHashtagsToFooter: true,
 };
 
