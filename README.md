@@ -31,6 +31,7 @@ Minimalist Kanban EE aims to remain a simple, small alternative to heavier Kanba
 The main difference from the original version is that this fork adds a more expressive card structure while still keeping the file format readable as Markdown.
 
 ## What it looks like
+<img width="1088" height="630" alt="image" src="https://github.com/user-attachments/assets/c5eb3879-5c16-46c1-ba04-735fc93fb376" />
 
 A board file is still just Markdown with `##` headings as lists and `- [ ]` items as cards:
 
