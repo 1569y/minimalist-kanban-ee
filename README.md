@@ -1,6 +1,3 @@
-## README.md 英文版
-
-````markdown
 # Minimalist Kanban EE
 
 [中文说明](README.zh-CN.md) | English
@@ -494,5 +491,4 @@ npm run test:e2e  # Run e2e tests, if configured
 
 原项目采用 MIT License。本 fork 保留原始 license 和 copyright notice。
 
-````
 [1]: https://docs.github.com/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax?utm_source=chatgpt.com "Basic writing and formatting syntax"
