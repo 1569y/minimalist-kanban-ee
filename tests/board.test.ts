@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, fireEvent } from "@testing-library/svelte";
 import Board from "../src/Board.svelte";
-import { Menu, Notice, Platform } from "obsidian";
+import { Menu, Notice, Platform } from "./mocks/obsidian";
 import SortableMock from "./mocks/sortablejs";
 import type { Board as BoardType } from "../src/types";
 import { formatItemForEditing, serializeBoard } from "../src/parser";
@@ -446,15 +446,27 @@ describe("Board card menu", () => {
 
   test("soft color CSS uses lane-color overlay and keeps fallback when lane has no color", () => {
     const css = readFileSync("styles.css", "utf8");
+    expect(css).toContain("--mk-stripe-rgb");
+    expect(css).toContain("--mk-lane-stripe-rgb");
+    expect(css).toContain("background-color: rgb(var(--mk-stripe-rgb, var(--mk-color-rgb)));");
+    expect(css).toContain("--mk-color-rgb:");
+    expect(css).toContain("--mk-lane-color-rgb:");
     expect(css).toContain('.kb-lane[data-lane-color] .kb-item[data-card-color="soft-color"] {');
     expect(css).toContain("rgba(var(--mk-lane-color-rgb), 0.08)");
     expect(css).toContain("var(--background-primary)");
     expect(css).toContain('.kb-lane[data-lane-color] .kb-item[data-card-color="soft-color"] .kb-card-stripe {');
     expect(css).toContain("display: block;");
-    expect(css).toContain("background-color: rgba(var(--mk-lane-color-rgb), 0.76);");
-    expect(css).toContain('.kb-item[data-card-color="soft-color"] {');
-    expect(css).toContain("background-color: var(--background-primary);");
-  });
+    expect(css).toContain(
+      "background-color: rgb(var(--mk-lane-stripe-rgb, var(--mk-lane-color-rgb)));"
+      );
+      expect(css).toContain('.kb-item[data-card-color="soft-color"] {');
+      expect(css).toContain("background-color: var(--background-primary);");
+      expect(css).toContain('.kb-item[data-card-color="happy"] {');
+      expect(css).toContain('.kb-lane[data-lane-color="happy"] {');
+      expect(css).toContain('.kb-item[data-card-color="sad"] {');
+      expect(css).toContain('.kb-item[data-card-color="angry"] {');
+      expect(css).toContain('.kb-item[data-card-color="ennui"] {');
+    });
 
   test("duplicate card clones item after original", async () => {
     const { container, onChange } = renderBoard();

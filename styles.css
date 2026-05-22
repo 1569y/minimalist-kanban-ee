@@ -258,64 +258,78 @@
   width: 3px;
   height: 22px;
   border-radius: 999px;
-  background-color: rgba(var(--mk-color-rgb), 0.76);
+  background-color: rgb(var(--mk-stripe-rgb, var(--mk-color-rgb)));
   z-index: 0;
 }
 
 .kb-lane[data-lane-color="happy"] {
-  --mk-lane-color-rgb: 199, 176, 122;
+  --mk-lane-color-rgb: 250, 222, 63;
+  --mk-lane-stripe-rgb: 255, 171, 0;
 }
 
 .kb-item[data-card-color="happy"] {
-  --mk-color-rgb: 199, 176, 122;
+  --mk-color-rgb: 250, 222, 63;
+  --mk-stripe-rgb: 255, 171, 0;
 }
 
 .kb-lane[data-lane-color="sad"] {
-  --mk-lane-color-rgb: 123, 146, 173;
+  --mk-lane-color-rgb: 114, 146, 173;
+  --mk-lane-stripe-rgb: 0, 68, 255;
 }
 
 .kb-item[data-card-color="sad"] {
-  --mk-color-rgb: 123, 146, 173;
+  --mk-color-rgb: 114, 146, 173;
+  --mk-stripe-rgb: 0, 68, 255;
 }
 
 .kb-lane[data-lane-color="angry"] {
-  --mk-lane-color-rgb: 184, 108, 93;
+  --mk-lane-color-rgb: 154, 108, 93;
+  --mk-lane-stripe-rgb: 255, 5, 0;
 }
 
 .kb-item[data-card-color="angry"] {
-  --mk-color-rgb: 184, 108, 93;
+  --mk-color-rgb: 154, 108, 93;
+  --mk-stripe-rgb: 255, 5, 0;
 }
 
 .kb-lane[data-lane-color="fear"] {
   --mk-lane-color-rgb: 162, 124, 180;
+  --mk-lane-stripe-rgb: 201, 58, 237;
 }
 
 .kb-item[data-card-color="fear"] {
   --mk-color-rgb: 162, 124, 180;
+  --mk-stripe-rgb: 201, 58, 237;
 }
 
 .kb-lane[data-lane-color="envy"] {
   --mk-lane-color-rgb: 112, 156, 146;
+  --mk-lane-stripe-rgb: 15, 230, 130;
 }
 
 .kb-item[data-card-color="envy"] {
   --mk-color-rgb: 112, 156, 146;
+  --mk-stripe-rgb: 15, 230, 130;
 }
 
 .kb-lane[data-lane-color="ennui"] {
-  --mk-lane-color-rgb: 105, 112, 156;
+  --mk-lane-color-rgb: 90, 112, 156;
+  --mk-lane-stripe-rgb: 10, 10, 10;
 }
 
 .kb-item[data-card-color="ennui"] {
-  --mk-color-rgb: 105, 112, 156;
+  --mk-color-rgb: 90, 112, 156;
+  --mk-stripe-rgb: 10, 10, 10;
 }
 
 .kb-lane[data-lane-color="disgust"] {
   --mk-lane-color-rgb: 141, 162, 126;
+  --mk-lane-stripe-rgb: 125, 165, 182;
 }
 
 .kb-item[data-card-color="disgust"] {
   --mk-color-rgb: 141, 162, 126;
+  --mk-stripe-rgb: 125, 165, 182;
 }
 
 .kb-item[data-card-color="soft-color"] {
@@ -340,7 +354,7 @@
 
 .kb-lane[data-lane-color] .kb-item[data-card-color="soft-color"] .kb-card-stripe {
   display: block;
-  background-color: rgba(var(--mk-lane-color-rgb), 0.76);
+  background-color: rgb(var(--mk-lane-stripe-rgb, var(--mk-lane-color-rgb)));
 }
 
 .kb-item-checkbox {

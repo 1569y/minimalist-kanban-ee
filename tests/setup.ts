@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { beforeEach } from "vitest";
-import { Menu, Notice } from "obsidian";
+import { Menu, Notice } from "./mocks/obsidian";
 import SortableMock from "./mocks/sortablejs";
 
 // Inject mock before any Svelte component loads

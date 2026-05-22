@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/svelte";
 import Lane from "../src/Lane.svelte";
-import { Menu } from "obsidian";
+import { Menu } from "./mocks/obsidian";
 import SortableMock from "./mocks/sortablejs";
 
 const defaultSettings = {
