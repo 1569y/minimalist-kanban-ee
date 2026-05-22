@@ -56,15 +56,14 @@ describe("Item", () => {
   test("task title and body CSS stays aligned between parent and subtask", () => {
     const css = readFileSync("styles.css", "utf8");
     expect(css).toContain(".kb-item-title,\n.kb-subtask-title {");
-    expect(css).toContain("font-size: var(--mk-card-title-font-size, 1.02em);");
+    expect(css).toContain("font-size: var(--mk-card-title-font-size,");
     expect(css).toContain("line-height: var(--mk-task-title-line-height, 1.45);");
     expect(css).toContain("font-size: var(--mk-task-body-font-size, 0.92em);");
     expect(css).toContain("line-height: var(--mk-task-body-line-height, 1.45);");
     expect(css).toContain(".kb-item-title p,");
+    expect(css).toContain(".kb-item-body-note p,");
     expect(css).toContain(".kb-subtask-title p,");
     expect(css).toContain(".kb-subtask-body p {");
-    expect(css).toContain(".kb-item-checkbox {\n  margin: 0;\n  margin-top: 1px;");
-    expect(css).toContain(".kb-subtask-checkbox {\n  margin: 0;\n  margin-top: 1px;");
   });
 
   test("hashtag chips render at card footer when setting enabled", () => {

@@ -105,6 +105,7 @@ export class Plugin {
   loadData = vi.fn().mockResolvedValue({});
   saveData = vi.fn().mockResolvedValue(undefined);
   register = vi.fn();
+  registerEvent = vi.fn();
   registerView = vi.fn();
   addCommand = vi.fn();
   addSettingTab = vi.fn();
@@ -146,6 +147,12 @@ export class Setting {
 
 export class WorkspaceLeaf {
   view: any = {};
+
+  setViewState(viewState: any, _eState?: unknown) {
+    (this as { _setViewStateCalls?: any[] })._setViewStateCalls ??= [];
+    (this as { _setViewStateCalls: any[] })._setViewStateCalls.push(viewState);
+    return Promise.resolve();
+  }
 }
 
 export class MarkdownView {
@@ -173,4 +180,8 @@ export class MarkdownRenderer {
     p.innerHTML = html;
     el.appendChild(p);
   }
+}
+
+export function setIcon(el: HTMLElement, icon: string) {
+  el.setAttribute("data-icon", icon);
 }

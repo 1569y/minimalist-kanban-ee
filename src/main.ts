@@ -6,6 +6,7 @@ import type { KBSettings } from "./settings";
 export default class KanbanBoardPlugin extends Plugin {
   settings: KBSettings = { ...DEFAULT_SETTINGS };
   private bypassRedirect = false;
+  private injectToggleButtonsScheduled = false;
 
   async onload() {
     await this.loadSettings();
@@ -44,8 +45,16 @@ export default class KanbanBoardPlugin extends Plugin {
 
     this.patchSetViewState();
     this.registerEvent(
-      this.app.workspace.on("layout-change", () => this.injectToggleButtons())
+      this.app.workspace.on("layout-change", () => this.scheduleInjectToggleButtons())
     );
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", (leaf: WorkspaceLeaf | null) => {
+        if (leaf) this.syncToggleButtonForLeaf(leaf);
+      })
+    );
+    this.register(() => {
+      this.cleanupToggleButtons();
+    });
   }
 
   async loadSettings() {
@@ -127,23 +136,54 @@ export default class KanbanBoardPlugin extends Plugin {
 
   private injectToggleButtons() {
     this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
-      if (!(leaf.view instanceof MarkdownView)) return;
-      const file = leaf.view.file;
-      if (!file || !this.isKanbanFileSync(file.path)) return;
+      this.syncToggleButtonForLeaf(leaf);
+    });
+  }
 
-      // Don't add if already present
-      const actions = (leaf.view as unknown as { actionsEl?: HTMLElement }).actionsEl;
-      if (!actions || actions.querySelector("[data-kb-toggle]")) return;
+  private scheduleInjectToggleButtons() {
+    if (this.injectToggleButtonsScheduled) return;
 
-      const btn = actions.createEl("a", {
-        cls: "view-action",
-        attr: { "aria-label": "Switch to kanban view", "data-kb-toggle": "1" },
-      });
-      setIcon(btn, "columns-3");
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        void this.toggleView(leaf);
-      });
+    this.injectToggleButtonsScheduled = true;
+    window.setTimeout(() => {
+      this.injectToggleButtonsScheduled = false;
+      this.injectToggleButtons();
+    }, 0);
+  }
+
+  private syncToggleButtonForLeaf(leaf: WorkspaceLeaf) {
+    if (!(leaf.view instanceof MarkdownView)) return;
+
+    const file = leaf.view.file;
+    if (!file) return;
+
+    const actions = (leaf.view as unknown as { actionsEl?: HTMLElement }).actionsEl;
+    if (!actions) return;
+
+    const existing = actions.querySelector<HTMLElement>("[data-kb-toggle]");
+    const isKanbanFile = this.isKanbanFileSync(file.path);
+
+    if (!isKanbanFile) {
+      existing?.remove();
+      return;
+    }
+
+    if (existing) return;
+
+    const btn = actions.createEl("a", {
+      cls: "view-action",
+      attr: { "aria-label": "Switch to kanban view", "data-kb-toggle": "1" },
+    });
+    setIcon(btn, "columns-3");
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      void this.toggleView(leaf);
+    });
+  }
+
+  private cleanupToggleButtons() {
+    this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
+      const actions = (leaf.view as { actionsEl?: HTMLElement }).actionsEl;
+      actions?.querySelectorAll("[data-kb-toggle]").forEach((el) => el.remove());
     });
   }
 
