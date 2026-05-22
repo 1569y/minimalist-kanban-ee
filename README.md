@@ -1,27 +1,3 @@
-对，你记得的是 **README 前置目录 / Table of Contents**。GitHub README 里可以手写目录链接，例如 `[Features](#features)`；也可以用相对链接连接另一个 Markdown 文件，例如 `[中文](README.zh-CN.md)`。GitHub 官方也建议仓库内文档尽量用 relative links，因为克隆到本地后也更稳定。([GitHub Docs][1])
-
-我建议你这样放：
-
-```text
-README.md              # 英文主 README
-README.zh-CN.md        # 中文 README
-LICENSE                # 保留原 MIT License
-```
-
-`README.md` 顶部放：
-
-```markdown
-[中文说明](README.zh-CN.md) | English
-```
-
-`README.zh-CN.md` 顶部放：
-
-```markdown
-中文 | [English](README.md)
-```
-
----
-
 ## README.md 英文版
 
 ````markdown
